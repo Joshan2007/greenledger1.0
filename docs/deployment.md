@@ -1,4 +1,4 @@
-# Deployment Guide — Vercel, Local Agent & Smart Contract
+# Deployment Guide — Frontend, Backend & Local Agent
 
 ## 1. Vercel Deployment (Frontend Web Application)
 GreenLedger is optimized for zero-config Vercel deployment:
@@ -7,9 +7,7 @@ GreenLedger is optimized for zero-config Vercel deployment:
 3. Set Environment Variables:
    - `NEXT_PUBLIC_LOCAL_AGENT_URL=http://127.0.0.1:8765`
    - `NEXT_PUBLIC_API_URL=https://your-fastapi-backend.com`
-   - `NEXT_PUBLIC_CHAIN_ID=11155111`
-   - `NEXT_PUBLIC_CONTRACT_ADDRESS=0x71C234Ea533F96507A5F44265E923C47131B64E6`
-4. Deploy! If no local agent is running, Vercel visitors experience the complete platform via **Demo Mode**.
+4. Deploy the frontend. Real Windows telemetry and optimization actions still require the local agent.
 
 ---
 
@@ -29,9 +27,3 @@ python agent/api.py
 ```
 Agent listens on `http://127.0.0.1:8765`.
 
----
-
-## 4. Smart Contract Deployment (Ethereum Sepolia)
-```bash
-npx hardhat run contracts/scripts/deploy.js --network sepolia
-```

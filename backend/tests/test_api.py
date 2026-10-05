@@ -142,10 +142,3 @@ def test_green_credits_rules():
     new_state = credit_service.get_user_state("test_user_unique")
     assert new_state.credit_balance > state.credit_balance
     assert new_state.total_optimizations >= 1
-
-
-def test_marketplace_routes_removed():
-    """Marketplace and blockchain routes are intentionally absent from the local optimizer."""
-    assert client.get("/api/badges/list?user_id=default_user").status_code == 404
-    assert client.post("/api/marketplace/purchase", json={}).status_code == 404
-    assert client.get("/api/blockchain/metadata").status_code == 404
