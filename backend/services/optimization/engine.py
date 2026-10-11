@@ -1,3 +1,4 @@
+from services.carbon.grid_service import grid_carbon_service
 """
 GreenLedger - Optimization Engine Service
 Scores telemetry for optimization opportunities and validates before/after telemetry deltas.
@@ -53,14 +54,14 @@ class OptimizationEngineService:
                 if str(pname).lower() not in OPTIMIZABLE_PROCESS_NAMES:
                     continue
                 recommendations.append(OptimizationRecommendation(
-                    id=f"close_process_{p.get('pid')}",
-                    title=f"Suspend High-CPU App: {pname}",
-                    category="process_management",
+                    id=f"eco_throttle_process_{p.get('pid')}",
+                    title=f"Demote to EcoQoS & E-Cores: {pname}",
+                    category="eco_qos_tuning",
                     priority="high" if proc_cpu > 20.0 else "medium",
                     estimated_power_reduction_pct=None,
-                    reversible=False,
+                    reversible=True,
                     description=f"{pname} is drawing substantial processor cycles ({proc_cpu}% CPU).",
-                    action_name=f"Close {pname}",
+                    action_name=f"Throttle {pname}",
                     pid=p.get("pid"),
                     process_name=pname,
                     cpu_percent=proc_cpu,
@@ -116,7 +117,9 @@ class OptimizationEngineService:
         reduction_pct = (reduction_watts / p_before * 100.0) if p_before > 0 else 0.0
         
         # 2. Compute carbon savings
-        savings = calculate_savings(p_before, p_after, duration_hours=1.0)
+        grid_state = grid_carbon_service.get_current_grid_state()
+        grid_intensity = grid_state.get("intensity_kg_per_kwh", 0.385)
+        savings = calculate_savings(p_before, p_after, duration_hours=1.0, carbon_intensity=grid_intensity)
         
         # 3. Telemetry fingerprint to detect identical duplicate submissions
         import json
@@ -141,12 +144,14 @@ class OptimizationEngineService:
         from services.credits.rewards import credit_service
         credits_earned = 0
         if not is_abuse and reduction_pct >= MIN_REDUCTION_PERCENT_THRESHOLD:
-            credits_earned = credit_service.calculate_optimization_reward(
+            grid_mult = grid_state.get("carbon_multiplier", 1.0)
+            base_reward = credit_service.calculate_optimization_reward(
                 action_id=action_id,
                 reduction_pct=reduction_pct,
                 co2_saved_g=savings["co2_saved_g"],
                 user_id=user_id
             )
+            credits_earned = int(base_reward * grid_mult)
         elif not is_abuse:
             # Baseline execution participation
             credits_earned = credit_service.award_participation(user_id=user_id)

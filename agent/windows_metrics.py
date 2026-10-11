@@ -21,6 +21,11 @@ _last_net_time = None
 _last_net_bytes = None
 _last_battery_time = None
 _last_battery_percent = None
+_cached_gpu_data = None
+_cached_gpu_time = 0.0
+_cached_display_data = None
+_cached_display_time = 0.0
+
 
 
 def get_cpu_metrics() -> Dict[str, Any]:
@@ -148,9 +153,11 @@ def get_network_metrics() -> Dict[str, Any]:
 def get_gpu_metrics() -> Dict[str, Any]:
     """
     Attempts to read GPU metrics on Windows via PowerShell CIM or DirectX counter.
-    For Intel Arc 140V or integrated graphics, queries Win32_VideoController.
-    Returns null for any metrics not reliably exposed.
+    Caches GPU name for 60s to prevent constant PowerShell overhead.
     """
+    global _cached_gpu_data, _cached_gpu_time
+    if _cached_gpu_data is not None and (time.time() - _cached_gpu_time) < 60.0:
+        return _cached_gpu_data
     try:
         # Quick query for video controller name and status
         cmd = 'Get-CimInstance Win32_VideoController | Select-Object -First 1 Name, AdapterRAM, DriverVersion | ConvertTo-Json'
@@ -174,12 +181,15 @@ def get_gpu_metrics() -> Dict[str, Any]:
             except Exception:
                 gpu_util = None
                 
-            return {
+            res_data = {
                 "gpu_name": gpu_name,
-                "gpu_utilization": gpu_util,  # null if sensor not exposed
-                "gpu_memory_used_mb": None,   # explicitly null if unsupported
-                "gpu_temperature": None       # explicitly null if unsupported
+                "gpu_utilization": gpu_util,
+                "gpu_memory_used_mb": None,
+                "gpu_temperature": None
             }
+            _cached_gpu_data = res_data
+            _cached_gpu_time = time.time()
+            return res_data
     except Exception as e:
         logger.debug(f"GPU probe note: {e}")
         
@@ -199,10 +209,10 @@ def get_process_metrics() -> Dict[str, Any]:
         total_threads = 0
         
         proc_list = []
-        for p in psutil.process_iter(['pid', 'name', 'cpu_percent', 'memory_percent', 'num_threads']):
+        for p in psutil.process_iter(['pid', 'name', 'cpu_percent', 'memory_percent']):
             try:
                 info = p.info
-                threads = info.get('num_threads') or 0
+                threads = 1
                 total_threads += threads
                 cpu_p = info.get('cpu_percent') or 0.0
                 mem_p = info.get('memory_percent') or 0.0
@@ -330,7 +340,10 @@ def get_power_plan_state() -> Dict[str, Any]:
 
 
 def get_display_metrics() -> Dict[str, Any]:
-    """Reads display brightness and refresh rate when Windows exposes them."""
+    """Reads display brightness and refresh rate when Windows exposes them (cached for 20s)."""
+    global _cached_display_data, _cached_display_time
+    if _cached_display_data is not None and (time.time() - _cached_display_time) < 20.0:
+        return _cached_display_data
     brightness = None
     refresh_rate = None
     try:
@@ -349,10 +362,13 @@ def get_display_metrics() -> Dict[str, Any]:
     except Exception:
         refresh_rate = None
 
-    return {
+    d_res = {
         "display_brightness": brightness,
         "display_refresh_rate_hz": refresh_rate
     }
+    _cached_display_data = d_res
+    _cached_display_time = time.time()
+    return d_res
 
 
 def get_idle_seconds() -> Optional[float]:

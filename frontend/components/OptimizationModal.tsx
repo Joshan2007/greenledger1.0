@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { AlertTriangle, ShieldCheck, Zap, X, Check } from "lucide-react";
+import { AlertTriangle, ShieldCheck, Zap, X, Check, Flame, Bot } from "lucide-react";
 import { OptimizationOpportunity } from "../types";
 
 interface OptimizationModalProps {
@@ -77,6 +77,33 @@ export const OptimizationModal: React.FC<OptimizationModalProps> = ({
           {opportunity.rationale && (
             <div className="p-3 rounded-xl bg-surface/60 border border-surface-border text-[11px] text-gray-300 leading-relaxed">
               {opportunity.rationale}
+            </div>
+          )}
+
+          {opportunity.category === "eco_qos_tuning" && (
+            <div className="p-3 rounded-xl bg-emerald-950/50 border border-emerald-500/50 flex items-start gap-2.5 text-xs text-emerald-200">
+              <ShieldCheck className="w-4 h-4 text-cyber-neon shrink-0 mt-0.5" />
+              <span className="text-[11px] leading-relaxed">
+                <strong>Non-Destructive EcoQoS:</strong> This application will <strong>not</strong> be closed. It will remain running while Windows dynamically enforces EcoQoS efficiency mode and pins background threads to low-power E-Cores.
+              </span>
+            </div>
+          )}
+
+          {opportunity.category === "grid_temporal_shift" && (
+            <div className="p-3 rounded-xl bg-rose-950/50 border border-rose-500/50 flex items-start gap-2.5 text-xs text-rose-200">
+              <Flame className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+              <span className="text-[11px] leading-relaxed">
+                <strong>Temporal Peak Shifting (Novelty 2):</strong> Local electrical grid is operating at peak fossil-fuel intensity. Activating Grid Shield enables Windows Power Saver and throttles heavy background tasks to E-cores, earning a <strong>1.8x Green Credit bonus</strong>!
+              </span>
+            </div>
+          )}
+
+          {opportunity.category === "ai_power_governor" && (
+            <div className="p-3 rounded-xl bg-purple-950/50 border border-purple-500/50 flex items-start gap-2.5 text-xs text-purple-200">
+              <Bot className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" />
+              <span className="text-[11px] leading-relaxed">
+                <strong>Local AI Power Governor:</strong> Caps local LLM / neural inference power by pinning runtime worker threads to Intel/AMD Efficiency Cores and enforcing Windows EcoQoS. Restricts sustained wattage under 12W, preventing thermal throttling without interrupting generation.
+              </span>
             </div>
           )}
 

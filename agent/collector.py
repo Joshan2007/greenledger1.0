@@ -64,6 +64,14 @@ class TelemetryCollectorService:
                 return collect_full_telemetry()
             return self._latest_snapshot
 
+    def sample_now(self) -> Dict[str, Any]:
+        """Forces an immediate fresh hardware telemetry sampling."""
+        data = collect_full_telemetry()
+        with self._lock:
+            self._latest_snapshot = data
+            self._history.append(data)
+        return data
+
     def get_history(self) -> List[Dict[str, Any]]:
         """Returns buffered rolling history."""
         with self._lock:

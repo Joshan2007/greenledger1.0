@@ -10,6 +10,8 @@ interface PowerGaugeProps {
   potentialReductionPct: number | null;
   isMeasuredPowerAvailable?: boolean;
   measuredPowerW?: number | null;
+  gridIntensity?: number | null;
+  gridZone?: string | null;
 }
 
 export const PowerGauge: React.FC<PowerGaugeProps> = ({
@@ -18,7 +20,9 @@ export const PowerGauge: React.FC<PowerGaugeProps> = ({
   energyScore,
   potentialReductionPct,
   isMeasuredPowerAvailable = false,
-  measuredPowerW = null
+  measuredPowerW = null,
+  gridIntensity = null,
+  gridZone = null
 }) => {
   return (
     <div className="p-6 rounded-2xl bg-gradient-to-br from-surface-card via-surface-card to-surface-elevated/40 border border-surface-border relative overflow-hidden shadow-glow-green/10">
@@ -84,7 +88,7 @@ export const PowerGauge: React.FC<PowerGaugeProps> = ({
             <span className="text-xs font-mono text-gray-400">g CO₂e/h</span>
           </div>
           <span className="text-[10px] text-gray-400 mt-1 font-mono">
-            Grid Intensity Factor 0.385
+            {gridZone ? `Grid (${gridZone}): ${gridIntensity || 0.680} kg/kWh` : "Grid Factor 0.385"}
           </span>
         </div>
 

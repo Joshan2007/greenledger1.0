@@ -1,3 +1,4 @@
+from ai_governor import ai_governor_instance
 """
 GreenLedger - Local Windows Telemetry Agent Server
 FastAPI HTTP & WebSocket service running on http://127.0.0.1:8765.
@@ -73,7 +74,7 @@ def health_check():
 
 @app.get("/telemetry")
 def get_telemetry():
-    """Returns the latest real-time telemetry snapshot."""
+    """Returns the latest real-time telemetry snapshot instantly."""
     return collector_service.get_latest()
 
 
@@ -126,3 +127,26 @@ def undo_optimization(req: UndoRequest):
 if __name__ == "__main__":
     logger.info(f"Launching GreenLedger Local Agent on http://{AGENT_HOST}:{AGENT_PORT}")
     uvicorn.run("api:app", host=AGENT_HOST, port=AGENT_PORT, reload=False)
+
+class AIModeRequest(BaseModel):
+    mode: str
+
+class AISimulateRequest(BaseModel):
+    enabled: bool
+
+@app.get("/ai/status")
+def get_ai_governor_status():
+    """Returns status of local AI / LLM power governor (Novelty 4)."""
+    return ai_governor_instance.get_status()
+
+@app.post("/ai/mode")
+def set_ai_governor_mode(req: AIModeRequest):
+    """Sets dynamic energy budget mode across local AI workloads."""
+    return ai_governor_instance.set_governor_mode(req.mode)
+
+@app.post("/ai/simulate")
+def toggle_ai_simulation(req: AISimulateRequest):
+    """Toggles simulated local AI workload for hackathon demo testing."""
+    ai_governor_instance._simulate_demo = req.enabled
+    ai_governor_instance._cached_ai_processes = []
+    return {"success": True, "simulated": req.enabled}

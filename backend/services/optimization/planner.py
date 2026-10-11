@@ -1,3 +1,4 @@
+from services.carbon.grid_service import grid_carbon_service
 """
 GreenLedger - Safety-constrained optimization planner.
 Ranks approved laptop power actions by predicted watt reduction, confidence,
@@ -137,24 +138,71 @@ class OptimizationPlannerService:
             })
             recommendations.append(_with_learning(
                 OptimizationRecommendation(
-                    id=f"close_process_{proc.get('pid')}",
-                    title=f"Close High-Load App: {name}",
-                    category="process_management",
+                    id=f"eco_throttle_process_{proc.get('pid')}",
+                    title=f"Demote to EcoQoS & E-Cores: {name}",
+                    category="eco_qos_tuning",
                     priority="high" if proc_cpu >= 18 else "medium",
-                    reversible=False,
-                    description=f"{name} is using {round(proc_cpu, 1)}% CPU. Closing it may reduce active CPU wakeups.",
-                    action_name=f"Close {name}",
+                    reversible=True,
+                    description=f"Enforces Windows 11 EcoQoS and pins execution to Efficiency Cores for {name} ({round(proc_cpu, 1)}% CPU) without closing it.",
+                    action_name=f"Throttle {name}",
                     pid=proc.get("pid"),
                     process_name=name,
                     cpu_percent=proc_cpu,
                     memory_percent=proc.get("memory_percent", 0.0),
-                    confidence=0.62,
-                    safety_level="user_approved",
-                    rationale="Process-level CPU use is the most direct safe optimization signal available."
+                    confidence=0.78,
+                    safety_level="reversible",
+                    rationale="Non-destructive Windows EcoQoS: prevents dynamic voltage and clock spikes while keeping the application completely active."
                 ),
                 telemetry,
                 before_w - after_w,
             ))
+
+        
+        # Novelty 2: Dynamic Grid-Aware Temporal Shift Recommendation
+        grid_state = grid_carbon_service.get_current_grid_state()
+        if grid_state.get("status") in ("dirty_peak", "moderate"):
+            recommendations.append(_with_learning(
+                OptimizationRecommendation(
+                    id="grid_temporal_shift",
+                    title=f"Grid Alert ({grid_state['zone']}): Defer Heavy Compute",
+                    category="grid_temporal_shift",
+                    priority="high" if grid_state.get("status") == "dirty_peak" else "medium",
+                    reversible=True,
+                    description=f"Local electrical grid is at {grid_state['intensity_g_per_kwh']} g CO2e/kWh ({grid_state['status_label']}). Activate Grid Shield to earn a {grid_state['carbon_multiplier']}x Green Credit multiplier.",
+                    action_name="Activate Grid Shield",
+                    confidence=0.88,
+                    safety_level="reversible",
+                    rationale=f"Fossil peaker generation is elevated. Deferring background tasks until {grid_state['clean_window_text']} saves up to 35% emissions."
+                ),
+                telemetry,
+                2.8,
+            ))
+
+
+        # Novelty 4: Local AI / LLM Power Governor Recommendation
+        try:
+            from agent.ai_governor import ai_governor_instance
+            ai_status = ai_governor_instance.get_status()
+            if ai_status.get("detected_ai_workloads") and ai_status.get("governor_mode") != "eco":
+                primary_proc = ai_status["detected_ai_workloads"][0]
+                recommendations.append(_with_learning(
+                    OptimizationRecommendation(
+                        id="set_ai_budget_eco",
+                        title=f"Local AI Active: Cap {primary_proc['label']} to Eco Budget",
+                        category="ai_power_governor",
+                        priority="high",
+                        reversible=True,
+                        description=f"Enforce Windows EcoQoS and E-core thread pinning on {primary_proc['name']} ({primary_proc['cpu_percent']}% CPU). Caps power below 12W.",
+                        action_name="Cap AI to 12W",
+                        confidence=0.82,
+                        safety_level="reversible",
+                        rationale="Local LLM inference produces sustained 35W-65W thermal load. Dynamic governor caps thermal throttling without killing the session."
+                    ),
+                    telemetry,
+                    8.9
+                ))
+        except Exception:
+            pass
 
         recommendations.sort(
             key=lambda rec: (

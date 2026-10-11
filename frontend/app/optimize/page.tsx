@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { 
   Zap, 
+  Bot,
   ShieldCheck, 
   CheckCircle, 
   ArrowRight, 
@@ -10,7 +11,8 @@ import {
   Sliders, 
   Sparkles,
   AlertCircle,
-  RotateCcw
+  RotateCcw,
+  Flame
 } from "lucide-react";
 import { Navbar } from "../../components/Navbar";
 import { Footer } from "../../components/Footer";
@@ -74,9 +76,16 @@ export default function OptimizePage() {
       const executed = await executeOptimizationAction(actionId, params, isAgentLive);
       if (!executed) throw new Error("Optimization was not executed by the local Windows agent.");
 
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // Wait 2.5s for thread scheduling to settle onto E-cores
+      await new Promise((resolve) => setTimeout(resolve, 2500));
 
-      const afterSnap = await fetchTelemetry();
+      // Retrieve post-intervention telemetry, ensuring timestamp has updated
+      let afterSnap = await fetchTelemetry();
+      const waitStart = Date.now();
+      while (afterSnap.timestamp === beforeSnap.timestamp && (Date.now() - waitStart) < 7000) {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        afterSnap = await fetchTelemetry();
+      }
       setAfterTelemetry(afterSnap);
 
       const result = await evaluateOptimizationDelta(actionId, beforeSnap, afterSnap);
@@ -236,7 +245,26 @@ export default function OptimizePage() {
 
                 <div className="mt-5 pt-4 border-t border-surface-border/60 flex items-center justify-between">
                   <span className="text-[11px] font-mono text-gray-400">
-                    {rec.reversible ? "Reversible Plan" : "Graceful Close"}
+                    {rec.category === "eco_qos_tuning" ? (
+                      <span className="text-emerald-300 font-semibold flex items-center gap-1">
+                        <ShieldCheck className="w-3.5 h-3.5 text-cyber-neon" />
+                        <span>Zero-Disruption EcoQoS (Reversible)</span>
+                      </span>
+                    ) : rec.category === "ai_power_governor" ? (
+                      <span className="text-purple-300 font-semibold flex items-center gap-1">
+                        <Bot className="w-3.5 h-3.5 text-purple-400" />
+                        <span>AI Energy Governor (12W Cap)</span>
+                      </span>
+                    ) : rec.category === "grid_temporal_shift" ? (
+                      <span className="text-rose-300 font-semibold flex items-center gap-1">
+                        <Flame className="w-3.5 h-3.5 text-rose-400" />
+                        <span>Dynamic Peaker Shield (1.8x Multiplier)</span>
+                      </span>
+                    ) : rec.reversible ? (
+                      "Reversible Plan"
+                    ) : (
+                      "Graceful Close"
+                    )}
                   </span>
 
                   <button

@@ -4,7 +4,7 @@
  * and Cloud / Local FastAPI Backend (http://127.0.0.1:8000).
  */
 
-import { TelemetryData, PredictionResult, OptimizationOpportunity, BeforeAfterResult, UserCreditState } from "../types";
+import { TelemetryData, PredictionResult, OptimizationOpportunity, BeforeAfterResult, UserCreditState, GridState, AIGovernorStatus } from "../types";
 
 export const AGENT_BASE_URL = process.env.NEXT_PUBLIC_LOCAL_AGENT_URL || "http://127.0.0.1:8765";
 export const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
@@ -30,7 +30,7 @@ export async function checkAgentHealth(): Promise<boolean> {
 export async function fetchTelemetry(): Promise<TelemetryData> {
   try {
     const res = await fetch(`${AGENT_BASE_URL}/telemetry`, {
-      signal: AbortSignal.timeout(1500)
+      signal: AbortSignal.timeout(4000)
     });
     if (res.ok) {
       const data = await res.json();
@@ -156,3 +156,64 @@ export async function fetchCreditState(userId: string = "default_user"): Promise
   throw new Error("Credit state unavailable: backend is unreachable.");
 }
 
+/**
+ * Fetches real-time electricity grid carbon intensity and renewable status (Novelty 2).
+ */
+export async function fetchGridIntelligence(): Promise<GridState | null> {
+  try {
+    const res = await fetch(`${BACKEND_BASE_URL}/api/carbon/grid`);
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch {}
+  return null;
+}
+
+/**
+ * Switches the active regional electricity grid zone.
+ */
+export async function switchGridZone(zone: string): Promise<GridState | null> {
+  try {
+    const res = await fetch(`${BACKEND_BASE_URL}/api/carbon/grid/select`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ zone })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return data.active_grid;
+    }
+  } catch {}
+  return null;
+}
+
+/**
+ * Fetches status of local AI / LLM Power Governor (Novelty 4).
+ */
+export async function fetchAIGovernorStatus(): Promise<AIGovernorStatus | null> {
+  try {
+    const res = await fetch(`${AGENT_BASE_URL}/ai/status`, {
+      signal: AbortSignal.timeout(2000)
+    });
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch {}
+  return null;
+}
+
+/**
+ * Changes dynamic AI Energy Budget Mode (eco, balanced, turbo).
+ */
+export async function setAIGovernorMode(mode: 'eco' | 'balanced' | 'turbo'): Promise<boolean> {
+  try {
+    const res = await fetch(`${AGENT_BASE_URL}/ai/mode`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode })
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}

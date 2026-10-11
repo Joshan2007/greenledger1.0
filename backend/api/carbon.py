@@ -48,3 +48,32 @@ def calculate_carbon_footprint(req: CarbonRequest):
 def get_emission_factors() -> Dict[str, Any]:
     """Returns transparent regional grid carbon emission factors."""
     return REGIONAL_FACTORS
+
+from pydantic import BaseModel
+from services.carbon.grid_service import grid_carbon_service
+
+
+class GridSelectRequest(BaseModel):
+    zone: str
+
+
+@router.get("/grid")
+def get_live_grid_intelligence() -> Dict[str, Any]:
+    """Returns live regional electricity grid carbon intensity and temporal shifts (Novelty 2)."""
+    return grid_carbon_service.get_current_grid_state()
+
+
+@router.get("/grid/zones")
+def get_grid_zones() -> Dict[str, Any]:
+    """Returns all supported regional electricity grid zones."""
+    return grid_carbon_service.get_available_zones()
+
+
+@router.post("/grid/select")
+def set_active_grid_zone(req: GridSelectRequest) -> Dict[str, Any]:
+    """Sets the active regional electricity grid zone."""
+    success = grid_carbon_service.set_zone(req.zone)
+    return {
+        "success": success,
+        "active_grid": grid_carbon_service.get_current_grid_state()
+    }

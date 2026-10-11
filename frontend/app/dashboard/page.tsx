@@ -21,12 +21,15 @@ import { EnergyCore3D } from "../../components/EnergyCore3D";
 import { TelemetryCard } from "../../components/TelemetryCard";
 import { PowerGauge } from "../../components/PowerGauge";
 import { LiveChart } from "../../components/LiveChart";
-import { fetchTelemetry, predictPower } from "../../lib/api";
-import { TelemetryData, PredictionResult } from "../../types";
+import { AIGovernorCard } from "../../components/AIGovernorCard";
+import { fetchTelemetry, predictPower, fetchGridIntelligence, fetchAIGovernorStatus } from "../../lib/api";
+import { TelemetryData, PredictionResult, GridState, AIGovernorStatus } from "../../types";
 
 export default function DashboardPage() {
   const [telemetry, setTelemetry] = useState<TelemetryData | null>(null);
   const [prediction, setPrediction] = useState<PredictionResult | null>(null);
+  const [gridState, setGridState] = useState<GridState | null>(null);
+  const [aiGovernorStatus, setAiGovernorStatus] = useState<AIGovernorStatus | null>(null);
   const [history, setHistory] = useState<{
     time: string;
     power: number;
@@ -46,6 +49,11 @@ export default function DashboardPage() {
     let isMounted = true;
 
     const poll = async () => {
+      // Load Grid Intelligence if needed
+      if (!gridState) {
+        fetchGridIntelligence().then((g) => { if (g && isMounted) setGridState(g); });
+      }
+      fetchAIGovernorStatus().then((ai) => { if (ai && isMounted) setAiGovernorStatus(ai); });
       // 1. Fetch telemetry
       let data: TelemetryData;
       try {
@@ -85,7 +93,7 @@ export default function DashboardPage() {
             network: data.network_throughput_kbs ?? 0,
             gpu: data.gpu_utilization ?? null,
             processes: data.process_count,
-            carbon: pred.estimated_power_w * 0.385
+            carbon: pred.estimated_power_w * (gridState?.intensity_kg_per_kwh ?? 0.680)
           }
         ];
         return next.slice(-25); // keep last 25 ticks
@@ -103,7 +111,8 @@ export default function DashboardPage() {
 
   // Derived metrics
   const estimatedPower = prediction?.estimated_power_w ?? null;
-  const carbonRate = estimatedPower === null ? null : estimatedPower * 0.385;
+  const currentGridFactor = gridState?.intensity_kg_per_kwh ?? 0.680;
+  const carbonRate = estimatedPower === null ? null : estimatedPower * currentGridFactor;
   
   // Calculate transparent energy score: 100 - (cpu * 0.4 + mem * 0.3 + (power / 60) * 30)
   const cpuLoad = telemetry?.cpu_utilization ?? null;
@@ -256,6 +265,14 @@ export default function DashboardPage() {
           </div>
 
         </div>
+
+        {/* Local AI Power Governor Card */}
+        <AIGovernorCard
+          status={aiGovernorStatus}
+          onModeChanged={() => {
+            fetchAIGovernorStatus().then((ai) => { if (ai) setAiGovernorStatus(ai); });
+          }}
+        />
 
         {/* 6 Core Hardware Telemetry Cards */}
         <div>

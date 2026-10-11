@@ -106,3 +106,43 @@ export interface UserCreditState {
     unlocked_badge?: string | null;
   }[];
 }
+
+export interface GridState {
+  zone: string;
+  zone_name: string;
+  country: string;
+  intensity_kg_per_kwh: number;
+  intensity_g_per_kwh: number;
+  status: "clean" | "moderate" | "dirty_peak";
+  status_label: string;
+  badge_color: string;
+  renewable_percentage: number;
+  carbon_multiplier: number;
+  peak_hours_text: string;
+  clean_window_text: string;
+  current_hour?: number;
+  recommendation: string;
+  timestamp: string;
+}
+
+export interface AIWorkloadProcess {
+  pid: number;
+  name: string;
+  label: string;
+  cpu_percent: number;
+  memory_percent: number;
+  estimated_watts: number;
+  is_governed: boolean;
+  current_mode: string;
+  is_simulated?: boolean;
+}
+
+export interface AIGovernorStatus {
+  governor_mode: 'eco' | 'balanced' | 'turbo';
+  is_active: boolean;
+  detected_ai_workloads: AIWorkloadProcess[];
+  total_active_ai_processes: number;
+  estimated_ai_power_watts: number;
+  estimated_power_saved_watts: number;
+  governor_modes: Record<string, { label: string; badge: string; savings: string }>;
+}
