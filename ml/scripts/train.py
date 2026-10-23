@@ -107,7 +107,7 @@ def train_power_model(dataset_path: str = None) -> Dict[str, Any]:
             
     logger.info(f"Best hyperparameters selected: {best_params} (Val RMSE: {best_val_rmse:.4f} W)")
     
-    # 5. Final Model Training on Full Train+Val
+    # 5. Final Model Training with Validation Early Stopping (Zero Test-Set Leakage)
     final_model = xgb.XGBRegressor(
         objective="reg:squarederror",
         random_state=42,
@@ -118,8 +118,8 @@ def train_power_model(dataset_path: str = None) -> Dict[str, Any]:
     )
     
     final_model.fit(
-        X_train_val, y_train_val,
-        eval_set=[(X_test, y_test)],
+        X_train, y_train,
+        eval_set=[(X_val, y_val)],
         verbose=False
     )
     
@@ -180,7 +180,8 @@ def train_power_model(dataset_path: str = None) -> Dict[str, Any]:
         "rmse_watts": round(test_rmse, 4),
         "mape_percent": round(test_mape * 100, 2),
         "best_iteration": int(final_model.best_iteration) if hasattr(final_model, "best_iteration") and final_model.best_iteration is not None else int(best_params["n_estimators"]),
-        "train_samples": int(len(X_train_val)),
+        "train_samples": int(len(X_train)),
+        "val_samples": int(len(X_val)),
         "test_samples": int(len(X_test)),
         "hyperparameters": best_params,
         "feature_importances": feature_importance_dict,

@@ -1,10 +1,11 @@
 {
-  "r2": 0.9759,
-  "mae_watts": 0.968,
-  "rmse_watts": 1.2113,
-  "mape_percent": 4.1,
-  "best_iteration": 112,
-  "train_samples": 8500,
+  "r2": 0.9753,
+  "mae_watts": 0.9779,
+  "rmse_watts": 1.2239,
+  "mape_percent": 4.15,
+  "best_iteration": 96,
+  "train_samples": 7000,
+  "val_samples": 1500,
   "test_samples": 1500,
   "hyperparameters": {
     "max_depth": 5,
@@ -16,21 +17,21 @@
     "reg_lambda": 1.0
   },
   "feature_importances": {
-    "cpu_utilization": 0.8228499889373779,
-    "resource_pressure": 0.0847100019454956,
-    "cpu_memory_ratio": 0.08045999705791473,
-    "memory_usage": 0.004430000204592943,
-    "disk_io": 0.0017000000225380063,
-    "thread_count": 0.0015300000086426735,
-    "uptime": 0.001500000013038516,
-    "process_count": 0.0014100000262260437,
-    "process_thread_ratio": 0.0014100000262260437
+    "cpu_utilization": 0.817110002040863,
+    "cpu_memory_ratio": 0.08636000007390976,
+    "resource_pressure": 0.08337000012397766,
+    "memory_usage": 0.004989999812096357,
+    "disk_io": 0.001829999964684248,
+    "thread_count": 0.0017399999778717756,
+    "process_thread_ratio": 0.0015999999595806003,
+    "process_count": 0.0015300000086426735,
+    "uptime": 0.0014700000174343586
   },
   "dataset_metadata": {
-    "source": "C:\\Users\\VISHAL KHUMAR P D\\Desktop\\GreenLedger\\ml\\data\\raw\\sample_it_metrics.csv",
+    "source": "C:\\Users\\Joshan\\OneDrive\\Desktop\\GreenLedger V2\\ml\\data\\raw\\sample_it_metrics.csv",
     "is_synthetic": true,
     "total_rows": 10000
   },
-  "training_time_seconds": 1.82,
-  "evaluated_at": "2026-09-03T16:49:22Z"
+  "training_time_seconds": 5.07,
+  "evaluated_at": "2026-10-23T16:44:15Z"
 }

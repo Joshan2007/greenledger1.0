@@ -145,13 +145,14 @@ class OptimizationEngineService:
         credits_earned = 0
         if not is_abuse and reduction_pct >= MIN_REDUCTION_PERCENT_THRESHOLD:
             grid_mult = grid_state.get("carbon_multiplier", 1.0)
-            base_reward = credit_service.calculate_optimization_reward(
+            credits_earned = credit_service.calculate_optimization_reward(
                 action_id=action_id,
                 reduction_pct=reduction_pct,
                 co2_saved_g=savings["co2_saved_g"],
-                user_id=user_id
+                user_id=user_id,
+                grid_multiplier=grid_mult
             )
-            credits_earned = int(base_reward * grid_mult)
+
         elif not is_abuse:
             # Baseline execution participation
             credits_earned = credit_service.award_participation(user_id=user_id)

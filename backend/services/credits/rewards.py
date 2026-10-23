@@ -114,7 +114,8 @@ class GreenCreditService:
         action_id: str,
         reduction_pct: float,
         co2_saved_g: float,
-        user_id: str = "default_user"
+        user_id: str = "default_user",
+        grid_multiplier: float = 1.0
     ) -> int:
         """
         Transparent reward formula:
@@ -128,7 +129,8 @@ class GreenCreditService:
         co2_bonus = int(co2_saved_g / 2.0)
         streak_bonus = 5
         
-        total_reward = base + prop + co2_bonus + streak_bonus
+        base_reward = base + prop + co2_bonus + streak_bonus
+        total_reward = max(1, int(base_reward * max(0.1, grid_multiplier)))
         
         # Update user state
         u = self._user_states.setdefault(user_id, {
@@ -161,7 +163,7 @@ class GreenCreditService:
             "tx_id": f"tx_{int(time.time())}",
             "type": "optimization_reward",
             "credits": total_reward,
-            "description": f"Verified Optimization ({action_id}): -{reduction_pct:.1f}% Power",
+            "description": f"Verified Optimization ({action_id}): -{reduction_pct:.1f}% Power (Grid x{grid_multiplier:.2f})",
             "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "unlocked_badge": unlocked_badge
         })
