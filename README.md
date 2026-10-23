@@ -157,9 +157,25 @@ GreenLedger's native Windows daemon collects non-invasive metrics every 2.0 seco
 ### Machine Learning Power Prediction
 The core ML inference engine estimates total system power in Watts:
 - **Model**: Gradient-boosted decision trees (`XGBoostRegressor`).
-- **Performance**: $R^2 = 0.975$, Mean Absolute Error ($\text{MAE}$) = $0.96\text{ Watts}$.
+- **Performance (Held-Out Test Split)**: $R^2 = 0.9753$, Mean Absolute Error ($\text{MAE}$) = $0.978\text{ Watts}$, $\text{RMSE} = 1.224\text{ Watts}$.
 - **Latency**: Sub-millisecond inference time ($< 1.5\text{ ms}$).
 - **Feature Attribution**: Renders real-time feature contribution bars on the dashboard explaining precisely why wattage is elevated (CPU spikes vs. thermal load vs. background tasks).
+
+### 📊 Training Dataset: Kaggle IT System Performance Benchmark
+
+The power estimation model was trained and evaluated on the open-source **[IT System Performance and Resource Metrics](https://www.kaggle.com/datasets/freshersstaff/it-system-performance-and-resource-metrics)** benchmark dataset hosted on **Kaggle** (by [`freshersstaff`](https://www.kaggle.com/datasets/freshersstaff/it-system-performance-and-resource-metrics)):
+
+- **Dataset Source**: [Kaggle — IT System Performance & Resource Metrics](https://www.kaggle.com/datasets/freshersstaff/it-system-performance-and-resource-metrics)
+- **Observations**: 10,000 system telemetry records across diverse infrastructure operational states.
+- **Monitored Schema (12 Features)**:
+  - *Resource Load*: `cpu_utilization` (%), `memory_usage` (%), `disk_io` (MB/s), `network_latency` (ms)
+  - *Kernel Concurrency*: `process_count`, `thread_count`, `context_switches`, `cache_miss_rate` (%)
+  - *Thermals & Stability*: `temperature` (°C), `uptime` (hours), `status` (workload severity level)
+  - *Target Variable*: `power_consumption` (Watts), modeling CMOS dynamic power dissipation relationships ($P = P_{\text{idle}} + \alpha \cdot \text{CPU} + \beta \cdot \text{CPU}^2 + \dots$)
+- **Data Splitting Protocol (Zero Data Leakage)**:
+  - **70% Training** (7,000 samples): Fits tree ensembles
+  - **15% Validation** (1,500 samples): Hyperparameter tuning & early-stopping rounds
+  - **15% Held-Out Test** (1,500 samples): Strictly isolated for honest generalization benchmarking
 
 ---
 
